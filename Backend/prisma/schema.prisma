@@ -1,0 +1,178 @@
+// =============================================================================
+// Café POS — Prisma Schema
+// Stack: Express.js + Prisma + SQLite (dev) — swap datasource for Postgres (prod)
+// =============================================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+// =============================================================================
+// AUTH
+// =============================================================================
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String
+  name         String
+  role         UserRole @default(STAFF)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("users")
+}
+
+enum UserRole {
+  ADMIN
+  STAFF
+}
+
+// =============================================================================
+// TAGGING
+// Supports "system types" — canonical tag categories (e.g. Dietary, Course, Allergen)
+// Tags belong to a TagType. Food items are linked to Tags via a join table.
+// =============================================================================
+
+model TagType {
+  id        String   @id @default(uuid())
+  name      String   @unique    // e.g. "Dietary", "Course", "Allergen"
+  color     String?             // Optional UI hint e.g. "#4CAF50"
+
+  tags      Tag[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("tag_types")
+}
+
+model Tag {
+  id         String  @id @default(uuid())
+  name       String                         // e.g. "Vegan", "Starter", "Gluten-free"
+  color      String?                        // Override TagType color if needed
+  tagTypeId  String
+
+  tagType    TagType       @relation(fields: [tagTypeId], references: [id])
+  foodItems  FoodItemTag[]
+
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([tagTypeId, name])              // No duplicate tag names within a type
+  @@map("tags")
+}
+
+// =============================================================================
+// FOOD ITEMS
+// =============================================================================
+
+model FoodItem {
+  id          String  @id @default(uuid())
+  name        String
+  description String?
+  priceCents  Int                          // Always store money as cents
+  available   Boolean @default(true)       // Can be toggled off without deleting
+
+  tags        FoodItemTag[]
+  orderItems  OrderItem[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("food_items")
+}
+
+// Join table — FoodItem ↔ Tag (many-to-many)
+model FoodItemTag {
+  foodItemId String
+  tagId      String
+
+  foodItem   FoodItem @relation(fields: [foodItemId], references: [id], onDelete: Cascade)
+  tag        Tag      @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([foodItemId, tagId])
+  @@map("food_item_tags")
+}
+
+// =============================================================================
+// ORDERS
+// Lifecycle: DRAFT → AWAITING_PAYMENT → IN_KITCHEN → READY → COLLECTED
+//            DRAFT or AWAITING_PAYMENT → VOIDED
+//
+// An Order only moves to IN_KITCHEN after a Fulfillment is created (payment received).
+// The Fulfillment is the financial record — the Order is the operational record.
+// A refund on the Fulfillment does NOT roll back the Order.
+// =============================================================================
+
+model Order {
+  id          String      @id @default(uuid())
+  status      OrderStatus @default(DRAFT)
+  notes       String?                        // e.g. "Table 4", "Takeaway"
+  totalCents  Int         @default(0)        // Denormalised sum — recalculate on item change
+
+  items       OrderItem[]
+  fulfillment Fulfillment?
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("orders")
+}
+
+enum OrderStatus {
+  DRAFT             // Being built at the terminal
+  AWAITING_PAYMENT  // Confirmed, waiting for customer to pay
+  IN_KITCHEN        // Payment received — Fulfillment exists — sent to kitchen
+  READY             // Kitchen has completed the order
+  COLLECTED         // Customer has taken the order
+  VOIDED            // Cancelled before payment
+}
+
+// Snapshot of a food item at time of order.
+// priceCents is copied from FoodItem so historical orders survive menu price changes.
+model OrderItem {
+  id            String  @id @default(uuid())
+  orderId       String
+  foodItemId    String
+  quantity      Int     @default(1)
+  unitPriceCents Int                         // Snapshot — not a live FK to FoodItem price
+  notes         String?                      // e.g. "no onion"
+
+  order         Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  foodItem      FoodItem @relation(fields: [foodItemId], references: [id])
+
+  @@map("order_items")
+}
+
+// =============================================================================
+// FULFILLMENT
+// Created atomically with Order transitioning to IN_KITCHEN upon payment.
+// CR only — no updates, no deletes. Refunds are a new Fulfillment record (type=REFUND).
+// One-to-one with Order.
+// =============================================================================
+
+model Fulfillment {
+  id              String          @id @default(uuid())
+  orderId         String          @unique      // One fulfillment per order
+  type            FulfillmentType @default(PAYMENT)
+  amountCents     Int                          // Positive for payment, positive for refund (type distinguishes)
+  paymentMethod   String?                      // e.g. "CASH", "CARD" — free text for now, enum later
+  refundReason    String?                      // Populated when type=REFUND
+
+  order           Order @relation(fields: [orderId], references: [id])
+
+  fulfilledAt     DateTime @default(now())
+
+  @@map("fulfillments")
+}
+
+enum FulfillmentType {
+  PAYMENT
+  REFUND
+}

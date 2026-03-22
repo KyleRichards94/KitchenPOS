@@ -1,0 +1,17 @@
+{
+  "name": "kitchenpos",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "npx concurrently -n API,WEB -c cyan,magenta \"npm run dev --prefix Backend\" \"npm run dev --prefix FrontEnd\""
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  }
+}
