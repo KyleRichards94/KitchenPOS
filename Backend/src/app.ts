@@ -12,10 +12,10 @@ const PORT = process.env.PORT ?? 3000;
 // ---------------------------------------------------------------------------
 
 app.use(
-    cors({
-        origin: process.env.CORS_ORIGIN ?? "http://localhost:5173",
-        credentials: true,
-    }),
+  cors({
+    origin: process.env.CORS_ORIGIN ?? "http://localhost:5173",
+    credentials: true,
+  }),
 );
 app.use(express.json());
 
@@ -24,7 +24,7 @@ app.use(express.json());
 // ---------------------------------------------------------------------------
 
 app.get("/health", (_req, res) => {
-    res.json({ ok: true });
+  res.json({ ok: true });
 });
 
 // ---------------------------------------------------------------------------

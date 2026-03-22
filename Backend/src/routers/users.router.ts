@@ -1,55 +1,15 @@
 import { Router } from "express";
-import { z } from "zod";
 import bcrypt from "bcryptjs";
 import { asyncHandler, paramString } from "../lib/express-utils.js";
 import { requireAuth } from "../middleware/requireAuth.js";
 import { prisma } from "../prisma.js";
-import { UserRole } from "@prisma/client";
+import { CreateUserSchema, sanitiseUser, UpdateUserSchema } from "../domainSchemas/user.schema.js";
 
 export const usersRouter = Router();
 
 const SALT_ROUNDS = 12;
 
-// ---------------------------------------------------------------------------
-// Validation schemas
-// ---------------------------------------------------------------------------
-
-const CreateUserSchema = z.object({
-    email: z.string().email(),
-    password: z.string().min(8, "Password must be at least 8 characters"),
-    name: z.string().min(1),
-    role: z.nativeEnum(UserRole).optional(),
-});
-
-const UpdateUserSchema = z.object({
-    email: z.string().email().optional(),
-    password: z.string().min(8).optional(),
-    name: z.string().min(1).optional(),
-    role: z.nativeEnum(UserRole).optional(),
-});
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-// Never return passwordHash to the client
-const sanitiseUser = (user: {
-    id: string;
-    email: string;
-    name: string;
-    role: UserRole;
-    createdAt: Date;
-    updatedAt: Date;
-    passwordHash: string;
-}) => {
-    const { passwordHash: _omit, ...safe } = user;
-    return safe;
-};
-
-// ---------------------------------------------------------------------------
-// POST /users — public (registration / bootstrap)
-// ---------------------------------------------------------------------------
-
+// Create User
 usersRouter.post(
     "/",
     asyncHandler(async (req, res) => {
@@ -82,11 +42,7 @@ usersRouter.post(
         res.status(201).json(sanitiseUser(user));
     }),
 );
-
-// ---------------------------------------------------------------------------
-// GET /users
-// ---------------------------------------------------------------------------
-
+// Get Users 
 usersRouter.use(requireAuth).get(
     "/",
     asyncHandler(async (_req, res) => {
@@ -96,11 +52,7 @@ usersRouter.use(requireAuth).get(
         res.json(users.map(sanitiseUser));
     }),
 );
-
-// ---------------------------------------------------------------------------
-// GET /users/:id
-// ---------------------------------------------------------------------------
-
+// Get User/ Param {id}
 usersRouter.use(requireAuth).get(
     "/:id",
     asyncHandler(async (req, res) => {
@@ -122,11 +74,7 @@ usersRouter.use(requireAuth).get(
         res.json(sanitiseUser(user));
     }),
 );
-
-// ---------------------------------------------------------------------------
-// PUT /users/:id
-// ---------------------------------------------------------------------------
-
+// Update User/Param {id}; from body, User
 usersRouter.use(requireAuth).put(
     "/:id",
     asyncHandler(async (req, res) => {
@@ -178,11 +126,7 @@ usersRouter.use(requireAuth).put(
         res.json(sanitiseUser(user));
     })
 );
-
-// ---------------------------------------------------------------------------
-// DELETE /users/:id
-// ---------------------------------------------------------------------------
-
+// Delete User / id
 usersRouter.use(requireAuth).delete(
     "/:id",
     asyncHandler(async (req, res) => {
