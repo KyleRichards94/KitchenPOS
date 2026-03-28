@@ -58,7 +58,7 @@ model Tag {
   color      String?                        // Override TagType color if needed
   tagTypeId  String
 
-  tagType    TagType       @relation(fields: [tagTypeId], references: [id])
+  tagType    TagType       @relation(fields: [tagTypeId], references: [id], onDelete: Cascade)
   foodItems  FoodItemTag[]
 
   createdAt  DateTime @default(now())

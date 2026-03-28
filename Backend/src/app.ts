@@ -3,6 +3,7 @@ import cors from "cors";
 import express from "express";
 import { authenticateRouter } from "./routers/authenticate.router.js";
 import { usersRouter } from "./routers/users.router.js";
+import { tagsRouter, tagTypesRouter } from "./routers/tags.router.js";
 
 const app = express();
 const PORT = process.env.PORT ?? 3000;
@@ -33,6 +34,8 @@ app.get("/health", (_req, res) => {
 
 app.use("/auth", authenticateRouter);
 app.use("/users", usersRouter);
+app.use("/tagtypes", tagTypesRouter);
+app.use("/tags", tagsRouter);
 
 // ---------------------------------------------------------------------------
 // Global error handler

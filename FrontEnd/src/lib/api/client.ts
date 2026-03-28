@@ -15,6 +15,13 @@ export class ApiError extends Error {
 	}
 }
 
+export enum ApiRequest {
+	GET = "GET",
+	PUT = "PUT",
+	POST = "POST",
+	DELETE = "DELETE"
+}
+
 export type ApiFetchOptions = RequestInit & { skipAuth?: boolean };
 
 export type ApiResult = {
@@ -27,7 +34,7 @@ export type ApiResult = {
  * JSON `fetch` to the Express API. Sends `Authorization: Bearer` when a token exists,
  * unless `skipAuth` is true (e.g. login).
  */
-export async function apiFetch<T>(path: string, method: 'GET' | 'POST' | 'PUT' | 'DELETE', init: ApiFetchOptions = {}): Promise<T> {
+export async function apiFetch<T>(path: string, method: ApiRequest, init: ApiFetchOptions = {}): Promise<T> {
 	const { skipAuth = false, ...rest } = init;
 	const headers = new Headers(rest.headers);
 

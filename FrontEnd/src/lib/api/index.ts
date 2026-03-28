@@ -4,5 +4,41 @@ export { fetchMe, login, logout } from './auth';
 export type { AuthUser, LoginResponse, MeResponse, UserRole } from './auth';
 
 //API EXPORTS
-export { CreateUser, GetUser, GetUsers, } from './client.users';
+
+//Users
+export {
+    CreateUser,
+    GetUser,
+    GetUsers
+} from './client.users';
+
 export type { GetUsersResponse } from './client.users';
+
+// Tagging
+export {
+    CreateTagType,
+    GetTagTypes,
+    GetTagType,
+    UpdateTagType,
+    DeleteTagType,
+    CreateTag,
+    GetTags,
+    GetTag,
+    UpdateTag,
+    DeleteTag
+} from './client.tags'
+
+export type {
+    CreateTagTypeRequest,
+    CreateTagTypeResponse,
+    GetTagTypesResponse,
+    UpdateTagTypeRequest,
+    CreateTagRequest,
+    CreateTagResponse,
+    GetTagResponse,
+    UpdateTagRequest
+} from './client.tags'
+
+export type {
+    Tag
+} from './client.domainEntities'
